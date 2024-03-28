@@ -2,43 +2,47 @@
 .stack 100h
 
 .data
-oneChar db ?
-currentLine db 100 dup(?) 
+buffer db 10000 dup(?)   ; буфер для зберігання введених даних
+count dw 0               ; лічильник зчитаних символів
+
 .code
 main:
     mov ax, @data
     mov ds, ax
 
 read_next:
-    mov ah, 3Fh       
-    mov bx, 0         
-    mov cx, 1        
-    mov dx, offset oneChar 
-    int 21h           
+    mov ah, 3Fh          ; DOS: читання з файлу
+    mov bx, 0            ; буфер вводу (stdin)
+    mov cx, 1            ; читати 1 байт
+    mov dx, offset buffer ; адреса буфера
+    int 21h              ; виклик DOS
 
-    or ax, ax         
-    jz read_end      
+    test ax, ax          ; перевірка на кінець файлу
+    jz end_program
 
-    mov al, [oneChar] 
-    mov [currentLine + si], al 
+    mov al, buffer[0]    ; перший байт у AL
 
-    mov dl, [currentLine + si]        
-    mov ah, 02h                      
-    int 21h                           
+    ; перевірка на кінець рядка
+    cmp al, 0Dh          ; CR
+    je skip_next_byte    ; перевірка наступного байту
+    cmp al, 0Ah          ; LF
+    je skip_next_byte    ; перевірка наступного байту
 
-    inc si 
+    ; тут можна додати обробку кожного зчитаного символу
+    ; наприклад, зберігання у буфері для подальшого аналізу
 
-    cmp al, 0Ah      
-    jz find_string_count_preparation       
+    inc count             ; збільшуємо лічильник зчитаних символів
+    ; тут можна здійснити перевірку на максимальну довжину рядка
 
-    jmp read_next     
+skip_next_byte:
+    cmp count, 10000     ; перевірка на максимальну кількість символів
+    jge end_program      ; якщо досягнуто, завершуємо програму
 
-read_end:
-    mov ah, 4Ch       
-    int 21h           
+    jmp read_next        ; переходимо до наступного зчитування
 
-find_string_count_preparation:
-    jmp read_next   
+end_program:
+    mov ah, 4Ch          ; DOS: вихід з програми
+    int 21h
 
 end main
 
