@@ -2,103 +2,47 @@
 .stack 100h
 
 .data
-    buffer db 255 dup(?)    ; Буфер для зберігання введеного рядка
-    oneChar db ?
-    numbers dw 10000 dup(?) ; Масив для зберігання введених чисел
-    numbersCount dw 0        ; Лічильник введених чисел
-
+oneChar db ?
+currentLine db 100 dup(?) 
 .code
 main:
     mov ax, @data
     mov ds, ax
 
 read_next:
-    mov ah, 3Fh
-    mov bx, 0h  ; stdin handle
-    mov cx, 1   ; 1 byte to read
-    mov dx, offset oneChar   ; read to ds:dx 
-    int 21h   ;  ax = number of bytes read
-    ; do something with [oneChar]
-    or ax,ax
-    jnz read_next
+    mov ah, 3Fh       
+    mov bx, 0         
+    mov cx, 1        
+    mov dx, offset oneChar 
+    int 21h           
 
-    ; Перевірка, чи досягнуто кінця файлу
-    cmp ax, 0
-    je end_of_input
+    or ax, ax         
+    jz read_end      
 
-    ; Перевірка, чи прочитаний символ - пробіл або перенос рядка
-    mov al, oneChar
-    cmp al, ' '
-    je skip_space_or_newline
-    cmp al, 0Dh
-    je skip_space_or_newline
-    cmp al, 0Ah
-    je skip_space_or_newline
+    mov al, [oneChar] 
+    mov [currentLine + si], al 
 
-    ; Число зчитане, зберігаємо його у буфері та збільшуємо лічильник
-    mov [buffer], al
-    inc buffer
-    jmp read_next
+    mov dl, [currentLine + si]        
+    mov ah, 02h                      
+    int 21h                           
 
-skip_space_or_newline:
-    ; Перевірка, чи не пустий буфер
-    cmp buffer, 0
-    je read_next
+    inc si 
 
-    ; Конвертація числа з ASCII в двійковий формат та зберігання його у масиві чисел
-    mov ax, buffer
-    mov bx, 10
-    xor cx, cx
-convert_loop:
-    mov dx, 0
-    div bx
-    push dx
-    inc cx
-    test ax, ax
-    jnz convert_loop
-store_number:
-    pop ax
-    sub al, 30h   ; Конвертація ASCII у двійкове число
-    mov [numbers + numbersCount], ax
-    inc numbersCount
-    loop store_number
+    cmp al, 0Ah      
+    jz find_string_count_preparation       
 
-    ; Очищення буфера та перехід до наступного символу
-    mov buffer, 0
-    jmp read_next
+    jmp read_next     
 
-end_of_input:
-    ; Обробка введених чисел
-    ; Наприклад, можна вивести їх на екран
-    mov cx, numbersCount
-    mov si, offset numbers
-print_numbers_loop:
-    mov ax, [si]
-    call print_number
-    add si, 2
-    loop print_numbers_loop
+read_end:
+    mov ah, 4Ch       
+    int 21h           
 
-exit_program:
-    mov ah, 4Ch              ; Завершення програми
-    int 21h
+find_string_count_preparation:
+    jmp read_next   
 
-print_number proc
-    ; Виведення числа з ax на екран
-    mov bx, 10
-    xor dx, dx
-    mov cx, 0
-print_digit_loop:
-    div bx
-    push dx
-    inc cx
-    test ax, ax
-    jnz print_digit_loop
-print_loop:
-    pop dx
-    add dl, 30h              ; Конвертація числа у ASCII
-    mov ah, 02h              ; Вивід символа
-    int 21h
-    loop print_loop
-    ret
-print_number endp
 end main
+
+
+
+
+
