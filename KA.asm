@@ -13,7 +13,7 @@ start:
     mov cx, 0  ; лічильник чисел
 
 read_loop:
-    mov ah, 3Fh       ; зчитування з stdin
+    mov ah, 0Ah       ; зчитування з stdin
     mov bx, 0         ; stdin handle
     mov cx, 255       ; максимальна довжина рядка
     lea dx, buffer    ; буфер для зберігання рядка
